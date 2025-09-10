@@ -3,16 +3,22 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
+  ParseIntPipe,
   Post,
   Put,
   Query,
+  UseGuards,
+  ValidationPipe,
 } from '@nestjs/common';
 import { CreateNinjaDto } from './dto/create-ninja.dto';
 import { UpdateNinjaDto } from './dto/update-ninja.dto';
 import { NinjasService } from './ninjas.service';
+import { NinjaGuard } from './ninja.guard';
 
 @Controller('ninjas')
+@UseGuards(NinjaGuard) // guard all routes
 export class NinjasController {
   constructor(private readonly ninjaService: NinjasService) {}
 
@@ -22,22 +28,30 @@ export class NinjasController {
   }
 
   @Get(':id')
-  getSelectedNinja(@Param('id') id: number) {
-    return this.ninjaService.getSelectedNinja(+id);
+  getSelectedNinja(@Param('id', ParseIntPipe) id: number) {
+    try {
+      return this.ninjaService.getSelectedNinja(id);
+    } catch {
+      throw new NotFoundException();
+    }
   }
 
   @Post()
-  createNinja(@Body() createNinjaDto: CreateNinjaDto) {
+  @UseGuards(NinjaGuard) // guard specific route
+  createNinja(@Body(new ValidationPipe()) createNinjaDto: CreateNinjaDto) {
     return this.ninjaService.createNinja(createNinjaDto);
   }
 
   @Put(':id')
-  updateNinja(@Param('id') id: number, @Body() updateNinjaDto: UpdateNinjaDto) {
-    return this.ninjaService.updateNinja(+id, updateNinjaDto);
+  updateNinja(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateNinjaDto: UpdateNinjaDto,
+  ) {
+    return this.ninjaService.updateNinja(id, updateNinjaDto);
   }
 
   @Delete(':id')
-  deleteNinja(@Param('id') id: number) {
-    return this.ninjaService.deleteNinja(+id);
+  deleteNinja(@Param('id', ParseIntPipe) id: number) {
+    return this.ninjaService.deleteNinja(id);
   }
 }
